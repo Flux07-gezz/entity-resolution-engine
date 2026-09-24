@@ -1,0 +1,56 @@
+# Pipeline Configuration for Amazon ML Challenge 2026: Business Entity Resolution
+
+project:
+  name: "entity-resolution-engine"
+  random_seed: 42
+
+paths:
+  data_dir: "data"
+  output_dir: "output"
+  models_dir: "models"
+  submission_file: "output/matching_results.tsv"
+  experiments_log: "evaluation/experiments.jsonl"
+  experiments_summary: "evaluation/experiments.md"
+
+data:
+  s1_file: "source_1.tsv"
+  s2_file: "source_2.tsv"
+  s3_file: "source_3.tsv"
+  train_gt_file: "train_ground_truth.tsv"
+  s1_id_col: "source_1_id"
+  s2_id_col: "source_2_id"
+  s3_id_col: "source_3_id"
+  match_col: "matched_ids"
+  name_col: "name"
+  address_col: "address"
+
+validation:
+  n_splits: 5
+  stratified_sample_size: 3000
+  metric: "entity_macro_f05"
+  beta: 0.5
+
+blocking:
+  max_candidates_per_s1: 50
+  passes:
+    - name: "address_postal"
+      enabled: true
+    - name: "city_name_token"
+      enabled: true
+    - name: "name_fuzzy"
+      enabled: true
+
+model:
+  type: "lightgbm" # lightgbm | catboost | xgboost
+  params:
+    n_estimators: 300
+    learning_rate: 0.05
+    num_leaves: 31
+    random_state: 42
+    n_jobs: -1
+
+decision:
+  default_threshold: 0.75
+  search_step: 0.02
+  min_threshold: 0.50
+  max_threshold: 0.98
