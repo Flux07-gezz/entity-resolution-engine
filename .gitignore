@@ -18,8 +18,16 @@ Thumbs.db
 
 # Challenge / Output artifacts
 output/
+data/student_resource/
+data/__MACOSX/
+*.tsv
+*.csv
+*.zip
 models/*.bin
 models/*.pkl
 models/*.cbm
 models/*.json
 scratch/
+evaluation/*.json
+evaluation/*.jsonl
+

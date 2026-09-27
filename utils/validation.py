@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
 import csv
+import os
 
 
 class SubmissionValidator:
@@ -50,6 +51,15 @@ class SubmissionValidator:
 
                 if len(header) < 2:
                     errors.append(f"Expected at least 2 columns in header, got: {header}")
+                expected_headers = [
+                    ["source1_entity_id", "matched_entity_ids"],
+                    ["source1_entity_id", "candidate_entity_ids"],
+                ]
+                norm_header = [c.strip().lower() for c in header]
+                if norm_header not in expected_headers:
+                    errors.append(
+                        f"Unexpected header {norm_header}. Expected exactly ['source1_entity_id', 'matched_entity_ids'] or ['source1_entity_id', 'candidate_entity_ids']."
+                    )
 
                 for line_idx, row in enumerate(reader, start=2):
                     if not row:
@@ -120,3 +130,46 @@ class SubmissionValidator:
 
         is_valid = len(errors) == 0
         return is_valid, errors, stats
+
+
+def run_official_validator(
+    matching_path: Union[str, Path] = "output/matching_results.tsv",
+    candidate_path: Optional[Union[str, Path]] = "output/candidate_pairs.tsv",
+    test_dir: Union[str, Path] = "data/student_resource/dataset/test",
+    check_ids: bool = False,
+) -> Tuple[int, str]:
+    """Run the official organizer validator script (data/student_resource/utils/validate_submission.py)."""
+    import subprocess
+    import sys
+
+    validator_script = Path("data/student_resource/utils/validate_submission.py")
+    if not validator_script.is_file():
+        raise FileNotFoundError(f"Official validator not found at: {validator_script}")
+
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    cmd = [
+        sys.executable,
+        str(validator_script),
+        "--matching", str(matching_path),
+        "--test-dir", str(test_dir),
+    ]
+    if candidate_path and Path(candidate_path).is_file():
+        cmd.extend(["--candidate", str(candidate_path)])
+    if check_ids:
+        cmd.append("--check-ids")
+
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+    )
+    stdout = proc.stdout or ""
+    stderr = proc.stderr or ""
+    return proc.returncode, stdout + stderr
+
+
