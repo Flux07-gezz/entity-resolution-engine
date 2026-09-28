@@ -15,10 +15,11 @@ import io
 
 
 class SubmissionWriter:
-    """Format, validate, and write matching_results.tsv."""
+    """Format, validate, and write matching_results.tsv and candidate_pairs.tsv."""
 
-    DEFAULT_S1_COL = "source_1_id"
-    DEFAULT_MATCH_COL = "matched_ids"
+    DEFAULT_S1_COL = "source1_entity_id"
+    DEFAULT_MATCH_COL = "matched_entity_ids"
+    DEFAULT_CANDIDATE_COL = "candidate_entity_ids"
     DELIMITER = "\t"
     MATCH_SEPARATOR = ","
 
@@ -26,11 +27,13 @@ class SubmissionWriter:
         self,
         s1_column: str = DEFAULT_S1_COL,
         match_column: str = DEFAULT_MATCH_COL,
+        candidate_column: str = DEFAULT_CANDIDATE_COL,
         delimiter: str = DELIMITER,
         match_separator: str = MATCH_SEPARATOR,
     ):
         self.s1_column = s1_column
         self.match_column = match_column
+        self.candidate_column = candidate_column
         self.delimiter = delimiter
         self.match_separator = match_separator
 
@@ -123,6 +126,52 @@ class SubmissionWriter:
 
         return path
 
+    def write_candidates_tsv(
+        self,
+        candidates: Dict[str, Union[Sequence[str], str, None]],
+        expected_s1_ids: Sequence[str],
+        output_path: Union[str, Path],
+    ) -> Path:
+        """Write candidate pairs to TSV file conforming to candidate_pairs.tsv format."""
+        expected_set = set(expected_s1_ids)
+        cand_set = set(candidates.keys())
+
+        missing = expected_set - cand_set
+        if missing:
+            raise ValueError(
+                f"Missing candidate entries for {len(missing)} Source 1 IDs (e.g. {list(missing)[:5]})"
+            )
+
+        extra = cand_set - expected_set
+        if extra:
+            raise ValueError(
+                f"Extraneous {len(extra)} IDs found in candidates not in expected Source 1 set (e.g. {list(extra)[:5]})"
+            )
+
+        rows = []
+        for s1_id in expected_s1_ids:
+            raw_cands = candidates.get(s1_id, [])
+            clean_cands = self.clean_and_sort_matches(raw_cands, s1_id=s1_id)
+            rows.append({
+                self.s1_column: str(s1_id).strip(),
+                self.candidate_column: self.format_match_string(clean_cands),
+            })
+
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[self.s1_column, self.candidate_column],
+                delimiter=self.delimiter,
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            writer.writerows(rows)
+
+        return path
+
     def read_tsv(self, input_path: Union[str, Path]) -> Dict[str, List[str]]:
         """Read and parse matching_results.tsv back into a dictionary of lists."""
         path = Path(input_path)
@@ -154,3 +203,4 @@ class SubmissionWriter:
                 results[s1_id] = clean_matches
 
         return results
+

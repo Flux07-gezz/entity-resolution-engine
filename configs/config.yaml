@@ -5,24 +5,32 @@ project:
   random_seed: 42
 
 paths:
-  data_dir: "data"
+  data_dir: "data/student_resource/dataset"
+  train_dir: "data/student_resource/dataset/train"
+  test_dir: "data/student_resource/dataset/test"
   output_dir: "output"
   models_dir: "models"
   submission_file: "output/matching_results.tsv"
+  candidate_file: "output/candidate_pairs.tsv"
+  official_validator: "data/student_resource/utils/validate_submission.py"
   experiments_log: "evaluation/experiments.jsonl"
   experiments_summary: "evaluation/experiments.md"
 
 data:
-  s1_file: "source_1.tsv"
-  s2_file: "source_2.tsv"
-  s3_file: "source_3.tsv"
+  train_s1_file: "train_source1.tsv"
+  train_s2_file: "train_source2.tsv"
+  train_s3_file: "train_source3.tsv"
   train_gt_file: "train_ground_truth.tsv"
-  s1_id_col: "source_1_id"
-  s2_id_col: "source_2_id"
-  s3_id_col: "source_3_id"
-  match_col: "matched_ids"
-  name_col: "name"
-  address_col: "address"
+  test_s1_file: "test_source1.tsv"
+  test_s2_file: "test_source2.tsv"
+  test_s3_file: "test_source3.tsv"
+  id_col: "entity_id"
+  name_col: "business_name"
+  address_col: "business_address"
+  country_col: "country"
+  gt_s1_col: "source1_entity_id"
+  gt_matched_col: "matched_entity_ids"
+  candidate_col: "candidate_entity_ids"
 
 validation:
   n_splits: 5
